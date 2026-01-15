@@ -3,397 +3,66 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>StreamSaver Pro | High-Speed YouTube Downloader</title>
-    
-    <meta name="description" content="Download YouTube videos and shorts instantly in MP4/MP3. Fast, free, and secure.">
-    <meta name="keywords" content="youtube downloader, mp3 converter, video download, shorts download">
-    
-    <!-- Tailwind CSS -->
+    <title>StreamSaver Pro | Fast Downloader</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    
     <style>
-        body { 
-            background: linear-gradient(135deg, #0b0f19 0%, #1a1f2e 100%);
-            font-family: 'Inter', sans-serif; 
-            color: white;
-            min-height: 100vh;
-        }
-        .glass { 
-            background: rgba(255, 255, 255, 0.03); 
-            backdrop-filter: blur(10px); 
-            border: 1px solid rgba(255, 255, 255, 0.1); 
-        }
-        .btn-primary {
-            background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
-            transition: all 0.3s ease;
-        }
-        .btn-primary:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 10px 25px rgba(220, 38, 38, 0.3);
-        }
-        .btn-secondary {
-            background: rgba(255, 255, 255, 0.1);
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            transition: all 0.3s ease;
-        }
-        .btn-secondary:hover {
-            background: rgba(255, 255, 255, 0.2);
-        }
-        .pulse {
-            animation: pulse 2s infinite;
-        }
-        @keyframes pulse {
-            0% { opacity: 1; }
-            50% { opacity: 0.7; }
-            100% { opacity: 1; }
-        }
-        .slide-in {
-            animation: slideIn 0.5s ease-out;
-        }
-        @keyframes slideIn {
-            from { transform: translateY(20px); opacity: 0; }
-            to { transform: translateY(0); opacity: 1; }
-        }
+        body { background: #0f172a; color: white; font-family: 'Inter', sans-serif; }
+        .glass { background: rgba(255, 255, 255, 0.05); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.1); }
     </style>
 </head>
-<body class="min-h-screen flex flex-col items-center justify-center p-6">
+<body class="min-h-screen flex flex-col items-center justify-center p-4">
 
-    <div class="max-w-2xl w-full">
-        <!-- Header -->
-        <div class="text-center mb-10">
-            <div class="flex items-center justify-center gap-3 mb-4">
-                <div class="bg-red-600 p-3 rounded-xl">
-                    <i class="fab fa-youtube text-white text-2xl"></i>
-                </div>
-                <h1 class="text-4xl font-black tracking-tight">STREAMSAVER <span class="text-red-500">PRO</span></h1>
-            </div>
-            
-            <p class="text-gray-400 mb-6">Fast & Reliable YouTube Video Downloader</p>
-            
-            <!-- Server Status -->
-            <div id="serverStatus" class="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-gray-900/50 mb-6">
-                <div class="w-2 h-2 bg-yellow-500 rounded-full pulse"></div>
-                <span class="text-sm font-medium">Connecting to server...</span>
-            </div>
+    <div class="max-w-xl w-full text-center">
+        <h1 class="text-4xl font-black mb-2 italic">STREAMSAVER <span class="text-red-500 text-not-italic">PRO</span></h1>
+        <p id="status" class="text-[10px] text-gray-500 font-bold uppercase tracking-[0.3em] mb-10">Connecting...</p>
+
+        <div class="glass p-2 rounded-2xl flex flex-col md:flex-row gap-2 mb-8 border-red-500/20 border">
+            <input id="urlInput" type="text" placeholder="Paste YouTube/Shorts link here" 
+                   class="flex-1 bg-transparent p-4 outline-none text-white">
+            <button onclick="checkLink()" class="bg-red-600 px-8 py-4 rounded-xl font-bold hover:bg-red-700 transition">ANALYZE</button>
         </div>
 
-        <!-- Input Box -->
-        <div class="glass p-2 rounded-2xl flex flex-col md:flex-row gap-2 mb-8">
-            <input id="videoUrl" type="text" placeholder="Paste YouTube link here..." 
-                   class="flex-1 bg-transparent p-4 outline-none text-white text-lg placeholder-gray-500"
-                   value="https://youtu.be/dQw4w9WgXcQ">
-            <button onclick="analyzeVideo()" id="mainBtn" class="btn-primary px-8 py-4 rounded-xl font-bold text-lg">
-                <i class="fas fa-search mr-2"></i> ANALYZE
-            </button>
-        </div>
-
-        <!-- Error Message -->
-        <div id="errorBox" class="hidden bg-red-900/30 border border-red-700 rounded-xl p-4 mb-6 text-center">
-            <i class="fas fa-exclamation-triangle mr-2"></i>
-            <span id="errorText"></span>
-        </div>
-
-        <!-- Results -->
-        <div id="resultArea" class="hidden slide-in">
-            <div class="glass p-8 rounded-3xl mb-8">
-                <!-- Video Info -->
-                <div class="flex flex-col md:flex-row gap-6 mb-8">
-                    <div class="md:w-1/3">
-                        <img id="videoThumb" class="w-full rounded-xl shadow-2xl" src="" alt="Thumbnail">
-                    </div>
-                    <div class="md:w-2/3">
-                        <h3 id="videoTitle" class="text-xl font-bold mb-4 line-clamp-2"></h3>
-                        <div class="grid grid-cols-2 gap-4 mb-6">
-                            <div class="bg-gray-900/50 p-3 rounded-lg">
-                                <p class="text-gray-400 text-sm">Duration</p>
-                                <p id="videoDuration" class="font-semibold">-</p>
-                            </div>
-                            <div class="bg-gray-900/50 p-3 rounded-lg">
-                                <p class="text-gray-400 text-sm">Channel</p>
-                                <p id="videoChannel" class="font-semibold">-</p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Download Options -->
-                <h4 class="text-lg font-bold mb-4">Download Options:</h4>
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-                    <button onclick="downloadVideo('mp4', 'highest')" class="btn-primary p-4 rounded-xl text-left">
-                        <div class="flex justify-between items-center">
-                            <div>
-                                <p class="font-bold">MP4 HD Video</p>
-                                <p class="text-sm text-gray-300">Best Quality (720p+)</p>
-                            </div>
-                            <i class="fas fa-download text-xl"></i>
-                        </div>
-                    </button>
-                    
-                    <button onclick="downloadVideo('mp3', 'highestaudio')" class="btn-primary p-4 rounded-xl text-left">
-                        <div class="flex justify-between items-center">
-                            <div>
-                                <p class="font-bold">MP3 Audio</p>
-                                <p class="text-sm text-gray-300">High Quality Audio</p>
-                            </div>
-                            <i class="fas fa-music text-xl"></i>
-                        </div>
-                    </button>
-                </div>
-
-                <!-- Alternative Options -->
-                <div class="border-t border-gray-800 pt-6">
-                    <p class="text-gray-400 text-sm mb-4">If direct download doesn't work, try:</p>
-                    <div class="flex flex-wrap gap-3">
-                        <button onclick="useAlternative('y2mate')" class="btn-secondary px-4 py-2 rounded-lg text-sm">
-                            Y2Mate
-                        </button>
-                        <button onclick="useAlternative('ssyoutube')" class="btn-secondary px-4 py-2 rounded-lg text-sm">
-                            SSYouTube
-                        </button>
-                        <button onclick="useAlternative('yt5s')" class="btn-secondary px-4 py-2 rounded-lg text-sm">
-                            YT5s
-                        </button>
-                    </div>
-                </div>
+        <div id="downloadBox" class="hidden glass p-8 rounded-[2rem] border border-white/10 animate-bounce-short">
+            <p class="text-sm font-bold text-gray-400 mb-6 uppercase">Select Format</p>
+            <div class="grid grid-cols-1 gap-4">
+                <button onclick="startDl('mp4')" class="bg-white text-black p-4 rounded-xl font-bold hover:scale-105 transition">
+                    <i class="fas fa-video mr-2"></i> DOWNLOAD MP4 (HD)
+                </button>
+                <button onclick="startDl('mp3')" class="border border-white/20 p-4 rounded-xl font-bold hover:bg-white/5 transition">
+                    <i class="fas fa-music mr-2"></i> DOWNLOAD MP3 (AUDIO)
+                </button>
             </div>
-
-            <!-- Ad Space -->
-            <div class="glass p-6 rounded-2xl text-center mb-8">
-                <p class="text-gray-400 text-sm mb-3">Advertisement</p>
-                <div class="h-[90px] bg-gray-900 rounded-xl flex items-center justify-center">
-                    <p class="text-gray-500">Ad Space (Responsive)</p>
-                </div>
-            </div>
-        </div>
-
-        <!-- Footer -->
-        <div class="text-center mt-8">
-            <p class="text-gray-500 text-sm">
-                © 2024 StreamSaver Pro. Download videos for personal use only.
-            </p>
-            <p class="text-gray-600 text-xs mt-2">
-                This service is not affiliated with YouTube.
-            </p>
         </div>
     </div>
 
     <script>
-        // ⚠️ APNA RENDER URL YAHAN DALO
-        const RENDER_BACKEND_URL = "https://ytdownloader-pro.onrender.com"; 
-        let currentVideoId = "";
+        // ⚠️ APNA SAHI RENDER URL YAHAN DALO
+        const API_BASE = "https://ytdownloader-pro.onrender.com"; 
+        let currentVid = "";
 
-        // ⚡ WAKE UP CALL: Page load hote hi server ko ping karega
+        // Server Wake-up call
         window.onload = () => {
-            console.log("Sending wake-up call to server...");
-            
-            fetch(RENDER_BACKEND_URL + "/ping")
-                .then(response => {
-                    if (response.ok) {
-                        updateServerStatus("active", "Server Active & Ready", "green");
-                    }
-                })
-                .catch(() => {
-                    // Try again after 2 seconds
-                    setTimeout(() => {
-                        fetch(RENDER_BACKEND_URL + "/")
-                            .then(() => {
-                                updateServerStatus("active", "Server Ready", "green");
-                            })
-                            .catch(() => {
-                                updateServerStatus("inactive", "Server Starting...", "yellow");
-                            });
-                    }, 2000);
-                });
-            
-            // Auto-focus input
-            document.getElementById('videoUrl').focus();
+            fetch(API_BASE + "/").then(() => {
+                document.getElementById('status').innerText = "● Server Active";
+                document.getElementById('status').className = "text-[10px] text-green-500 font-bold uppercase tracking-[0.3em] mb-10";
+            });
         };
 
-        function updateServerStatus(status, message, color) {
-            const statusEl = document.getElementById('serverStatus');
-            const dot = statusEl.querySelector('div');
-            
-            dot.className = `w-2 h-2 rounded-full ${color === 'green' ? 'bg-green-500' : color === 'yellow' ? 'bg-yellow-500' : 'bg-red-500'}`;
-            statusEl.querySelector('span').textContent = message;
-            
-            if (color === 'green') {
-                dot.classList.remove('pulse');
-            }
-        }
-
-        async function analyzeVideo() {
-            const url = document.getElementById('videoUrl').value.trim();
-            const errorBox = document.getElementById('errorBox');
-            const errorText = document.getElementById('errorText');
-            
-            // Hide previous errors
-            errorBox.classList.add('hidden');
-            
-            if (!url) {
-                errorText.textContent = "Please paste a YouTube URL";
-                errorBox.classList.remove('hidden');
-                return;
-            }
-
-            // Extract video ID
-            const match = url.match(/(?:v=|youtu\.be\/|shorts\/|youtube\.com\/watch\?v=)([a-zA-Z0-9_-]{11})/);
-            
-            if (!match || !match[1]) {
-                errorText.textContent = "Invalid YouTube URL. Please check and try again.";
-                errorBox.classList.remove('hidden');
-                return;
-            }
-
-            currentVideoId = match[1];
-            document.getElementById('mainBtn').innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> Analyzing...';
-            
-            try {
-                // Get video info from backend
-                const response = await fetch(`${RENDER_BACKEND_URL}/api/info?videoId=${currentVideoId}`);
-                const data = await response.json();
-                
-                if (data.success) {
-                    // Update UI with video info
-                    document.getElementById('videoThumb').src = data.video.thumbnail;
-                    document.getElementById('videoTitle').textContent = data.video.title;
-                    document.getElementById('videoDuration').textContent = formatDuration(data.video.duration);
-                    document.getElementById('videoChannel').textContent = data.video.channel;
-                    
-                    // Show results
-                    document.getElementById('resultArea').classList.remove('hidden');
-                    document.getElementById('resultArea').scrollIntoView({ behavior: 'smooth' });
-                    
-                    document.getElementById('mainBtn').innerHTML = '<i class="fas fa-check mr-2"></i> Success';
-                    
-                    // Update server status
-                    updateServerStatus("active", "Server Ready", "green");
-                } else {
-                    throw new Error(data.error || "Failed to get video info");
-                }
-            } catch (error) {
-                console.error("Analysis error:", error);
-                errorText.textContent = "Failed to analyze video. Trying fallback...";
-                errorBox.classList.remove('hidden');
-                
-                // Fallback: Show basic info
-                showFallbackInfo(currentVideoId);
-                
-                document.getElementById('mainBtn').innerHTML = '<i class="fas fa-search mr-2"></i> ANALYZE';
-            }
-        }
-
-        function showFallbackInfo(videoId) {
-            // Basic info without API
-            document.getElementById('videoThumb').src = `https://i.ytimg.com/vi/${videoId}/hqdefault.jpg`;
-            document.getElementById('videoTitle').textContent = "YouTube Video";
-            document.getElementById('videoDuration').textContent = "Unknown";
-            document.getElementById('videoChannel').textContent = "YouTube";
-            
-            document.getElementById('resultArea').classList.remove('hidden');
-            document.getElementById('resultArea').scrollIntoView({ behavior: 'smooth' });
-        }
-
-        function formatDuration(seconds) {
-            if (!seconds || seconds === "Unknown") return "Unknown";
-            
-            const hrs = Math.floor(seconds / 3600);
-            const mins = Math.floor((seconds % 3600) / 60);
-            const secs = seconds % 60;
-            
-            if (hrs > 0) {
-                return `${hrs}:${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+        function checkLink() {
+            const input = document.getElementById('urlInput').value;
+            const match = input.match(/(?:v=|youtu\.be\/|shorts\/)([a-zA-Z0-9_-]{11})/);
+            if(match) {
+                currentVid = match[1];
+                document.getElementById('downloadBox').classList.remove('hidden');
             } else {
-                return `${mins}:${secs.toString().padStart(2, '0')}`;
+                alert("Please enter a valid YouTube link!");
             }
         }
 
-        function downloadVideo(type, quality) {
-            if (!currentVideoId) {
-                alert("Please analyze a video first");
-                return;
-            }
-            
-            showNotification(`Starting ${type.toUpperCase()} download...`);
-            
-            // Use direct download endpoint
-            const downloadUrl = `${RENDER_BACKEND_URL}/direct?videoId=${currentVideoId}&type=${type}`;
-            
-            // Open in new tab
-            const newTab = window.open(downloadUrl, '_blank');
-            
-            if (!newTab || newTab.closed) {
-                // If popup blocked, use current window
-                window.location.href = downloadUrl;
-            }
-            
-            // Fallback check
-            setTimeout(() => {
-                showNotification("If download doesn't start, try alternative buttons below", "warning");
-            }, 3000);
+        function startDl(type) {
+            window.location.href = `${API_BASE}/download?videoId=${currentVid}&type=${type}`;
         }
-
-        function useAlternative(service) {
-            if (!currentVideoId) {
-                alert("Please analyze a video first");
-                return;
-            }
-            
-            let url = '';
-            
-            switch(service) {
-                case 'y2mate':
-                    url = `https://www.y2mate.com/youtube/${currentVideoId}`;
-                    break;
-                case 'ssyoutube':
-                    url = `https://ssyoutube.com/watch?v=${currentVideoId}`;
-                    break;
-                case 'yt5s':
-                    url = `https://yt5s.com/en?q=https://youtube.com/watch?v=${currentVideoId}`;
-                    break;
-                default:
-                    url = `https://www.y2mate.com/youtube/${currentVideoId}`;
-            }
-            
-            showNotification(`Opening ${service}...`);
-            window.open(url, '_blank');
-        }
-
-        function showNotification(message, type = "info") {
-            // Remove existing notification
-            const existing = document.getElementById('customNotification');
-            if (existing) existing.remove();
-            
-            // Create notification
-            const notification = document.createElement('div');
-            notification.id = 'customNotification';
-            notification.className = `fixed bottom-4 right-4 px-6 py-3 rounded-xl shadow-2xl z-50 max-w-sm ${
-                type === 'info' ? 'bg-blue-600' : 
-                type === 'warning' ? 'bg-yellow-600' : 
-                'bg-green-600'
-            }`;
-            notification.innerHTML = `
-                <div class="flex items-center gap-3">
-                    <i class="fas fa-${type === 'info' ? 'info-circle' : type === 'warning' ? 'exclamation-triangle' : 'check-circle'}"></i>
-                    <span class="text-sm">${message}</span>
-                </div>
-            `;
-            
-            document.body.appendChild(notification);
-            
-            // Auto remove after 4 seconds
-            setTimeout(() => {
-                if (notification.parentNode) {
-                    notification.parentNode.removeChild(notification);
-                }
-            }, 4000);
-        }
-
-        // Enter key support
-        document.getElementById('videoUrl').addEventListener('keypress', function(e) {
-            if (e.key === 'Enter') analyzeVideo();
-        });
     </script>
 </body>
 </html>
