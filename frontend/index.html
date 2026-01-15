@@ -3,79 +3,60 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>StreamSaver Pro | High-Speed YouTube Downloader</title>
-    
-    <meta name="description" content="Download YouTube videos and shorts instantly in MP4/MP3. Fast, free, and secure.">
+    <title>StreamSaver Pro</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    
     <style>
-        body { background: #0b0f19; font-family: 'Inter', sans-serif; color: white; }
-        .glass { background: rgba(255, 255, 255, 0.03); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.1); }
+        body { background: #0b0f19; color: white; font-family: sans-serif; }
+        .loader { border-top-color: #ef4444; animation: spin 1s linear infinite; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
     </style>
 </head>
 <body class="min-h-screen flex flex-col items-center justify-center p-6">
 
-    <div class="max-w-2xl w-full text-center">
-        <div class="mb-8">
-            <h1 class="text-5xl font-black mb-2 tracking-tighter">STREAMSAVER <span class="text-red-600">PRO</span></h1>
-            <p id="serverStatus" class="text-xs text-gray-500 uppercase tracking-widest font-bold">Connecting to server...</p>
+    <div class="max-w-xl w-full text-center">
+        <h1 class="text-4xl font-black mb-2">STREAMSAVER <span class="text-red-600">PRO</span></h1>
+        <p id="status" class="text-xs text-gray-500 mb-8 font-bold uppercase tracking-widest">Waking up server...</p>
+
+        <div class="bg-gray-900/50 p-2 rounded-2xl flex gap-2 border border-white/10">
+            <input id="url" type="text" placeholder="Paste YouTube Link" class="bg-transparent flex-1 p-4 outline-none">
+            <button onclick="analyze()" class="bg-red-600 px-8 py-4 rounded-xl font-bold">ANALYZE</button>
         </div>
 
-        <div class="glass p-2 rounded-2xl flex flex-col md:flex-row gap-2 mb-8">
-            <input id="videoUrl" type="text" placeholder="Paste YouTube link here..." 
-                   class="flex-1 bg-transparent p-4 outline-none text-white text-lg">
-            <button onclick="analyzeVideo()" id="mainBtn" class="bg-red-600 px-8 py-4 rounded-xl font-bold hover:bg-red-700 transition-all">
-                ANALYZE
-            </button>
-        </div>
-
-        <div id="resultArea" class="hidden glass p-8 rounded-3xl animate-in fade-in duration-500">
-            <h3 class="font-bold text-xl mb-6">Your Video is Ready</h3>
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <button onclick="download('mp4')" class="bg-white text-black p-4 rounded-xl font-bold hover:bg-gray-200">
-                    <i class="fas fa-video mr-2"></i> Download MP4
-                </button>
-                <button onclick="download('mp3')" class="border border-white/20 p-4 rounded-xl font-bold hover:bg-white/5">
-                    <i class="fas fa-music mr-2"></i> Download MP3
-                </button>
+        <div id="result" class="hidden mt-8 p-8 bg-gray-900 rounded-3xl border border-red-600/20">
+            <p class="mb-6 font-bold text-gray-400">VIDEO IDENTIFIED</p>
+            <div class="flex flex-col gap-4">
+                <button onclick="dl('mp4')" class="bg-white text-black p-4 rounded-xl font-bold">DOWNLOAD MP4</button>
+                <button onclick="dl('mp3')" class="border border-white/20 p-4 rounded-xl font-bold">DOWNLOAD MP3</button>
             </div>
         </div>
     </div>
 
     <script>
-        // ⚠️ APNA RENDER URL YAHAN DALO
-        const RENDER_BACKEND_URL = "https://your-app-name.onrender.com"; 
-        let videoId = "";
+        // ⚡ Yahan apna Render ka sahi URL dalo
+        const BACKEND = "https://ytdownloader-pro.onrender.com"; 
+        let vid = "";
 
-        // ⚡ WAKE UP CALL: Page load hote hi server ko ping karega
+        // Server Wake-up Logic
         window.onload = () => {
-            fetch(RENDER_BACKEND_URL + "/")
-                .then(() => {
-                    document.getElementById('serverStatus').innerText = "● Server Active & Ready";
-                    document.getElementById('serverStatus').classList.replace('text-gray-500', 'text-green-500');
-                })
-                .catch(() => {
-                    document.getElementById('serverStatus').innerText = "● Server Initializing...";
-                });
+            fetch(BACKEND + "/").then(() => {
+                document.getElementById('status').innerText = "● Server Ready";
+                document.getElementById('status').classList.add('text-green-500');
+            });
         };
 
-        function analyzeVideo() {
-            const url = document.getElementById('videoUrl').value.trim();
-            const match = url.match(/(?:v=|youtu\.be\/|shorts\/)([a-zA-Z0-9_-]{11})/);
-
-            if (match) {
-                videoId = match[1];
-                document.getElementById('resultArea').classList.remove('hidden');
-                document.getElementById('mainBtn').innerText = "Success ✅";
+        function analyze() {
+            const val = document.getElementById('url').value;
+            const match = val.match(/(?:v=|youtu\.be\/|shorts\/)([a-zA-Z0-9_-]{11})/);
+            if(match) {
+                vid = match[1];
+                document.getElementById('result').classList.remove('hidden');
             } else {
-                alert("Invalid YouTube Link!");
+                alert("Invalid URL!");
             }
         }
 
-        function download(type) {
-            // Direct download stream from Render
-            window.location.href = `${RENDER_BACKEND_URL}/download?videoId=${videoId}&type=${type}`;
+        function dl(t) {
+            window.location.href = `${BACKEND}/download?videoId=${vid}&type=${t}`;
         }
     </script>
 </body>
