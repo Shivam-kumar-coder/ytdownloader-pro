@@ -1,12 +1,16 @@
 {
   "name": "streamsaver-backend",
-  "version": "1.0.0",
+  "version": "2.0.0",
   "type": "module",
   "main": "index.js",
-  "scripts": { "start": "node index.js" },
+  "scripts": {
+    "start": "node index.js"
+  },
   "dependencies": {
-    "@distube/ytdl-core": "^4.16.12",
     "express": "^4.18.2",
-    "cors": "^2.8.5"
+    "cors": "^2.8.5",
+    "ytdl-core": "^4.16.5",
+    "fluent-ffmpeg": "^2.1.2",
+    "axios": "^1.6.0"
   }
 }
