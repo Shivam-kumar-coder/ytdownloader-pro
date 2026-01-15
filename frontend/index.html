@@ -3,65 +3,48 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>StreamSaver Pro | Fast Downloader</title>
+    <title>StreamSaver Pro | HD</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <style>
-        body { background: #0f172a; color: white; font-family: 'Inter', sans-serif; }
-        .glass { background: rgba(255, 255, 255, 0.05); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.1); }
-    </style>
 </head>
-<body class="min-h-screen flex flex-col items-center justify-center p-4">
-
-    <div class="max-w-xl w-full text-center">
-        <h1 class="text-4xl font-black mb-2 italic">STREAMSAVER <span class="text-red-500 text-not-italic">PRO</span></h1>
-        <p id="status" class="text-[10px] text-gray-500 font-bold uppercase tracking-[0.3em] mb-10">Connecting...</p>
-
-        <div class="glass p-2 rounded-2xl flex flex-col md:flex-row gap-2 mb-8 border-red-500/20 border">
-            <input id="urlInput" type="text" placeholder="Paste YouTube/Shorts link here" 
-                   class="flex-1 bg-transparent p-4 outline-none text-white">
-            <button onclick="checkLink()" class="bg-red-600 px-8 py-4 rounded-xl font-bold hover:bg-red-700 transition">ANALYZE</button>
+<body class="bg-black text-white flex items-center justify-center min-h-screen">
+    <div class="p-8 bg-gray-900 rounded-3xl w-full max-w-lg border border-gray-800">
+        <h1 class="text-3xl font-black text-center mb-8">STREAMSAVER <span class="text-red-600">PRO</span></h1>
+        
+        <div class="flex flex-col gap-4">
+            <input id="url" type="text" placeholder="Paste link here..." class="w-full p-4 rounded-xl bg-gray-800 border border-gray-700 outline-none">
+            <button onclick="analyze()" class="bg-red-600 p-4 rounded-xl font-bold hover:bg-red-700 transition">GENERATE LINKS</button>
         </div>
 
-        <div id="downloadBox" class="hidden glass p-8 rounded-[2rem] border border-white/10 animate-bounce-short">
-            <p class="text-sm font-bold text-gray-400 mb-6 uppercase">Select Format</p>
-            <div class="grid grid-cols-1 gap-4">
-                <button onclick="startDl('mp4')" class="bg-white text-black p-4 rounded-xl font-bold hover:scale-105 transition">
-                    <i class="fas fa-video mr-2"></i> DOWNLOAD MP4 (HD)
-                </button>
-                <button onclick="startDl('mp3')" class="border border-white/20 p-4 rounded-xl font-bold hover:bg-white/5 transition">
-                    <i class="fas fa-music mr-2"></i> DOWNLOAD MP3 (AUDIO)
-                </button>
-            </div>
+        <div id="loader" class="hidden text-center mt-6 text-gray-400 animate-pulse">Processing... Please Wait</div>
+
+        <div id="options" class="hidden mt-8 space-y-4">
+            <button onclick="dl('mp4')" class="w-full bg-white text-black p-4 rounded-xl font-bold">Download Video (MP4)</button>
+            <button onclick="dl('mp3')" class="w-full border border-gray-700 p-4 rounded-xl font-bold">Download Audio (MP3)</button>
         </div>
     </div>
 
     <script>
-        // ⚠️ APNA SAHI RENDER URL YAHAN DALO
-        const API_BASE = "https://ytdownloader-pro.onrender.com"; 
-        let currentVid = "";
+        const API = "https://ytdownloader-pro.onrender.com"; // 👈 Apna Render URL check karo
+        let vId = "";
 
-        // Server Wake-up call
-        window.onload = () => {
-            fetch(API_BASE + "/").then(() => {
-                document.getElementById('status').innerText = "● Server Active";
-                document.getElementById('status').className = "text-[10px] text-green-500 font-bold uppercase tracking-[0.3em] mb-10";
-            });
-        };
-
-        function checkLink() {
-            const input = document.getElementById('urlInput').value;
+        function analyze() {
+            const input = document.getElementById('url').value;
             const match = input.match(/(?:v=|youtu\.be\/|shorts\/)([a-zA-Z0-9_-]{11})/);
             if(match) {
-                currentVid = match[1];
-                document.getElementById('downloadBox').classList.remove('hidden');
+                vId = match[1];
+                document.getElementById('loader').classList.remove('hidden');
+                // Chhota sa delay to simulate processing
+                setTimeout(() => {
+                    document.getElementById('loader').classList.add('hidden');
+                    document.getElementById('options').classList.remove('hidden');
+                }, 1000);
             } else {
-                alert("Please enter a valid YouTube link!");
+                alert("Invalid Link!");
             }
         }
 
-        function startDl(type) {
-            window.location.href = `${API_BASE}/download?videoId=${currentVid}&type=${type}`;
+        function dl(t) {
+            window.location.href = `${API}/download?videoId=${vId}&type=${t}`;
         }
     </script>
 </body>
