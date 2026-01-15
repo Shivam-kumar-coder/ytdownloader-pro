@@ -1,20 +1,14 @@
 {
   "name": "ytdownloader-backend",
   "version": "1.0.0",
-  "description": "YouTube Video Downloader Backend",
+  "type": "module",
   "main": "index.js",
   "scripts": {
-    "start": "node index.js",
-    "dev": "nodemon index.js"
+    "start": "node index.js"
   },
   "dependencies": {
+    "@distube/ytdl-core": "latest",
     "express": "^4.18.2",
-    "cors": "^2.8.5",
-    "ytdl-core": "^4.16.5",
-    "axios": "^1.6.0",
-    "fluent-ffmpeg": "^2.1.2"
-  },
-  "engines": {
-    "node": ">=16.0.0"
+    "cors": "^2.8.5"
   }
 }
