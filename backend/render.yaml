@@ -1,24 +1,12 @@
 services:
   - type: web
     name: ytdownloader-backend
-    env: node
-    region: singapore  # or ohio, oregon, frankfurt
+    dockerfilePath: ./Dockerfile
     plan: free
-    branch: main
-    buildCommand: |
-      apt-get update
-      apt-get install -y python3-pip ffmpeg
-      pip3 install yt-dlp
-      npm install
-    startCommand: npm start
-    healthCheckPath: /health
     envVars:
       - key: NODE_ENV
         value: production
       - key: PORT
         value: 3000
+    healthCheckPath: /health
     autoDeploy: true
-    disk:
-      name: temp
-      mountPath: /tmp
-      sizeGB: 1
