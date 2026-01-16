@@ -5,62 +5,191 @@
   <title>YTDownloader Pro</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    .loader {
+      border: 3px solid #f3f3f3;
+      border-top: 3px solid #dc2626;
+      border-radius: 50%;
+      width: 30px;
+      height: 30px;
+      animation: spin 1s linear infinite;
+      display: inline-block;
+    }
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+  </style>
 </head>
 
-<body class="bg-black text-white min-h-screen flex items-center justify-center">
+<body class="bg-black text-white min-h-screen flex items-center justify-center p-4">
+  <div class="bg-gray-900 p-6 md:p-8 rounded-xl w-full max-w-xl shadow-2xl border border-gray-800">
+    <div class="text-center mb-8">
+      <h1 class="text-3xl md:text-4xl font-bold mb-2">
+        <i class="fab fa-youtube text-red-500 mr-2"></i>
+        YTDownloader <span class="text-red-500">Pro</span>
+      </h1>
+      <p class="text-gray-400 text-sm">Download YouTube videos in MP4 & MP3 format</p>
+    </div>
 
-  <div class="bg-gray-900 p-8 rounded-xl w-full max-w-xl">
-    <h1 class="text-3xl font-bold text-center mb-6">
-      YTDownloader <span class="text-red-500">Pro</span>
-    </h1>
-
-    <input
-      id="videoUrl"
-      type="text"
-      placeholder="Paste YouTube URL"
-      class="w-full p-3 rounded bg-gray-800 border border-gray-700 mb-4"
-    />
+    <div class="mb-6">
+      <div class="flex items-center mb-2">
+        <i class="fas fa-link text-gray-400 mr-2"></i>
+        <label class="text-gray-300">YouTube URL</label>
+      </div>
+      <input
+        id="videoUrl"
+        type="text"
+        placeholder="https://www.youtube.com/watch?v=..."
+        class="w-full p-3 rounded-lg bg-gray-800 border border-gray-700 focus:border-red-500 focus:outline-none transition"
+      />
+    </div>
 
     <button
+      id="analyzeBtn"
       onclick="analyze()"
-      class="w-full bg-red-600 hover:bg-red-700 p-3 rounded font-bold"
+      class="w-full bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 p-3 rounded-lg font-bold text-lg transition-all duration-300 flex items-center justify-center"
     >
-      ANALYZE
+      <span id="btnText">ANALYZE VIDEO</span>
+      <div id="loader" class="loader hidden ml-3"></div>
     </button>
 
-    <div id="actions" class="hidden mt-6 space-y-3">
-      <button onclick="download('mp4')" class="w-full bg-green-600 p-3 rounded">
-        Download MP4
-      </button>
-      <button onclick="download('mp3')" class="w-full bg-blue-600 p-3 rounded">
-        Download MP3
-      </button>
+    <div id="error" class="hidden mt-4 p-3 bg-red-900/30 border border-red-700 rounded-lg text-red-300"></div>
+
+    <div id="videoInfo" class="hidden mt-6 p-4 bg-gray-800 rounded-lg">
+      <div class="flex items-center mb-3">
+        <img id="thumbnail" src="" class="w-20 h-12 rounded mr-3 object-cover">
+        <div>
+          <h3 id="videoTitle" class="font-bold truncate"></h3>
+          <p id="videoDuration" class="text-sm text-gray-400"></p>
+        </div>
+      </div>
+    </div>
+
+    <div id="actions" class="hidden mt-6 space-y-4 animate-fadeIn">
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+        <button onclick="download('mp4')" class="bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 p-4 rounded-lg font-bold flex items-center justify-center transition">
+          <i class="fas fa-video mr-2"></i> MP4 (Video)
+        </button>
+        <button onclick="download('mp3')" class="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 p-4 rounded-lg font-bold flex items-center justify-center transition">
+          <i class="fas fa-music mr-2"></i> MP3 (Audio)
+        </button>
+      </div>
+      
+      <div class="grid grid-cols-3 gap-2 mt-4">
+        <button onclick="downloadQuality('360')" class="bg-gray-800 hover:bg-gray-700 p-2 rounded text-sm">
+          360p
+        </button>
+        <button onclick="downloadQuality('720')" class="bg-gray-800 hover:bg-gray-700 p-2 rounded text-sm">
+          720p
+        </button>
+        <button onclick="downloadQuality('1080')" class="bg-gray-800 hover:bg-gray-700 p-2 rounded text-sm">
+          1080p
+        </button>
+      </div>
+    </div>
+
+    <div class="mt-8 pt-6 border-t border-gray-800 text-center text-gray-500 text-sm">
+      <p><i class="fas fa-exclamation-triangle mr-1"></i> For educational purposes only</p>
+      <p class="mt-1">Max duration: 30 minutes • Supported formats: MP4, MP3</p>
     </div>
   </div>
 
 <script>
-const RENDER_BACKEND_URL = "https://ytdownloader-pro.onrender.com";
+const BACKEND_URL = "https://ytdownloader-pro.onrender.com";
 let videoId = "";
+let videoData = {};
 
-function analyze() {
+async function analyze() {
   const url = document.getElementById("videoUrl").value.trim();
-  const match = url.match(/(?:v=|youtu\.be\/)([a-zA-Z0-9_-]{11})/);
+  const match = url.match(/(?:v=|youtu\.be\/|shorts\/)([a-zA-Z0-9_-]{11})/);
 
   if (!match) {
-    alert("Invalid YouTube URL");
+    showError("Please enter a valid YouTube URL");
     return;
   }
 
   videoId = match[1];
-  document.getElementById("actions").classList.remove("hidden");
+  const btn = document.getElementById("analyzeBtn");
+  const btnText = document.getElementById("btnText");
+  const loader = document.getElementById("loader");
+  
+  // Show loading
+  btn.disabled = true;
+  btnText.textContent = "ANALYZING...";
+  loader.classList.remove("hidden");
+  hideError();
+
+  try {
+    // Fetch video info
+    const response = await fetch(`${BACKEND_URL}/info?videoId=${videoId}`);
+    if (!response.ok) throw new Error("Failed to fetch video info");
+    
+    videoData = await response.json();
+    
+    // Show video info
+    document.getElementById("videoInfo").classList.remove("hidden");
+    document.getElementById("thumbnail").src = videoData.thumbnail;
+    document.getElementById("videoTitle").textContent = videoData.title;
+    document.getElementById("videoDuration").textContent = `Duration: ${videoData.duration}`;
+    
+    // Show download buttons
+    document.getElementById("actions").classList.remove("hidden");
+    
+  } catch (error) {
+    console.error("Analysis error:", error);
+    showError("Could not analyze video. Please check the URL and try again.");
+  } finally {
+    // Reset button
+    btn.disabled = false;
+    btnText.textContent = "ANALYZE VIDEO";
+    loader.classList.add("hidden");
+  }
 }
 
-function download(type) {
-  const link = document.createElement("a");
-  link.href = `${RENDER_BACKEND_URL}/download?videoId=${videoId}&type=${type}`;
-  link.click();
+async function download(type) {
+  if (!videoId) {
+    showError("Please analyze a video first");
+    return;
+  }
+
+  showMessage(`Starting ${type.toUpperCase()} download...`, "info");
+  
+  // Open download in new tab
+  window.open(`${BACKEND_URL}/download?videoId=${videoId}&type=${type}`, '_blank');
 }
+
+async function downloadQuality(quality) {
+  if (!videoId) {
+    showError("Please analyze a video first");
+    return;
+  }
+
+  showMessage(`Starting ${quality}p download...`, "info");
+  window.open(`${BACKEND_URL}/download?videoId=${videoId}&type=mp4&quality=${quality}`, '_blank');
+}
+
+function showError(message) {
+  const errorDiv = document.getElementById("error");
+  errorDiv.textContent = message;
+  errorDiv.classList.remove("hidden");
+  setTimeout(() => errorDiv.classList.add("hidden"), 5000);
+}
+
+function hideError() {
+  document.getElementById("error").classList.add("hidden");
+}
+
+function showMessage(message, type) {
+  const color = type === "info" ? "blue" : "green";
+  alert(message); // You can replace with a better notification system
+}
+
+// Enter key support
+document.getElementById("videoUrl").addEventListener("keypress", function(e) {
+  if (e.key === "Enter") analyze();
+});
 </script>
-
 </body>
 </html>
