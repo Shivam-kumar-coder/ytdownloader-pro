@@ -16,12 +16,5 @@
   },
   "engines": {
     "node": ">=18.0.0"
-  },
-  "keywords": [
-    "youtube",
-    "downloader",
-    "api"
-  ],
-  "author": "YTDownloader Pro",
-  "license": "MIT"
+  }
 }
