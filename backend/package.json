@@ -1,18 +1,18 @@
 {
   "name": "ytdownloader-backend",
   "version": "2.0.0",
-  "description": "YouTube Downloader Backend for Render",
+  "description": "YouTube Downloader Backend",
   "type": "module",
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
-    "build": "echo 'Building...'",
-    "postinstall": "apt-get update && apt-get install -y python3-pip ffmpeg && pip3 install yt-dlp --upgrade"
+    "dev": "nodemon server.js"
   },
   "dependencies": {
     "express": "^4.18.2",
     "cors": "^2.8.5",
-    "axios": "^1.6.0"
+    "axios": "^1.6.0",
+    "ytdl-core": "^4.11.5"
   },
   "engines": {
     "node": ">=18.0.0"
@@ -20,8 +20,7 @@
   "keywords": [
     "youtube",
     "downloader",
-    "api",
-    "render"
+    "api"
   ],
   "author": "YTDownloader Pro",
   "license": "MIT"
