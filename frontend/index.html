@@ -2,194 +2,485 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>YTDownloader Pro</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>YTDownloader Pro - Download YouTube Videos</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="icon" type="image/x-icon" href="https://cdn-icons-png.flaticon.com/512/1384/1384060.png">
   <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+    
+    * {
+      font-family: 'Inter', sans-serif;
+    }
+    
+    .gradient-bg {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    }
+    
+    .gradient-btn {
+      background: linear-gradient(to right, #f56565, #ed64a6);
+    }
+    
+    .gradient-btn:hover {
+      background: linear-gradient(to right, #e53e3e, #d53f8c);
+    }
+    
     .loader {
       border: 3px solid #f3f3f3;
-      border-top: 3px solid #dc2626;
+      border-top: 3px solid #f56565;
       border-radius: 50%;
-      width: 30px;
-      height: 30px;
+      width: 24px;
+      height: 24px;
       animation: spin 1s linear infinite;
-      display: inline-block;
     }
+    
     @keyframes spin {
       0% { transform: rotate(0deg); }
       100% { transform: rotate(360deg); }
     }
+    
+    .fade-in {
+      animation: fadeIn 0.5s ease-in;
+    }
+    
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    
+    .pulse {
+      animation: pulse 2s infinite;
+    }
+    
+    @keyframes pulse {
+      0% { box-shadow: 0 0 0 0 rgba(245, 101, 101, 0.7); }
+      70% { box-shadow: 0 0 0 10px rgba(245, 101, 101, 0); }
+      100% { box-shadow: 0 0 0 0 rgba(245, 101, 101, 0); }
+    }
   </style>
 </head>
-
-<body class="bg-black text-white min-h-screen flex items-center justify-center p-4">
-  <div class="bg-gray-900 p-6 md:p-8 rounded-xl w-full max-w-xl shadow-2xl border border-gray-800">
-    <div class="text-center mb-8">
-      <h1 class="text-3xl md:text-4xl font-bold mb-2">
-        <i class="fab fa-youtube text-red-500 mr-2"></i>
-        YTDownloader <span class="text-red-500">Pro</span>
-      </h1>
-      <p class="text-gray-400 text-sm">Download YouTube videos in MP4 & MP3 format</p>
-    </div>
-
-    <div class="mb-6">
-      <div class="flex items-center mb-2">
-        <i class="fas fa-link text-gray-400 mr-2"></i>
-        <label class="text-gray-300">YouTube URL</label>
+<body class="bg-gradient-to-br from-gray-900 to-black min-h-screen text-white">
+  <!-- Navigation -->
+  <nav class="container mx-auto px-4 py-6">
+    <div class="flex justify-between items-center">
+      <div class="flex items-center space-x-2">
+        <i class="fab fa-youtube text-red-500 text-2xl"></i>
+        <h1 class="text-2xl font-bold">YTDownloader <span class="text-red-500">Pro</span></h1>
       </div>
-      <input
-        id="videoUrl"
-        type="text"
-        placeholder="https://www.youtube.com/watch?v=..."
-        class="w-full p-3 rounded-lg bg-gray-800 border border-gray-700 focus:border-red-500 focus:outline-none transition"
-      />
+      <div class="flex items-center space-x-4">
+        <a href="#" class="text-gray-300 hover:text-white transition"><i class="fas fa-info-circle"></i> Guide</a>
+        <a href="#" class="text-gray-300 hover:text-white transition"><i class="fas fa-cog"></i> Settings</a>
+      </div>
     </div>
+  </nav>
 
-    <button
-      id="analyzeBtn"
-      onclick="analyze()"
-      class="w-full bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 p-3 rounded-lg font-bold text-lg transition-all duration-300 flex items-center justify-center"
-    >
-      <span id="btnText">ANALYZE VIDEO</span>
-      <div id="loader" class="loader hidden ml-3"></div>
-    </button>
+  <!-- Main Container -->
+  <main class="container mx-auto px-4 py-8">
+    <div class="max-w-4xl mx-auto">
+      <!-- Hero Section -->
+      <div class="text-center mb-12">
+        <h2 class="text-4xl md:text-5xl font-bold mb-4 bg-clip-text text-transparent gradient-bg">
+          Download YouTube Videos & MP3
+        </h2>
+        <p class="text-gray-400 text-lg">Fast, free, and unlimited downloads. No registration required.</p>
+      </div>
 
-    <div id="error" class="hidden mt-4 p-3 bg-red-900/30 border border-red-700 rounded-lg text-red-300"></div>
+      <!-- URL Input Card -->
+      <div class="bg-gray-800/50 backdrop-blur-lg rounded-2xl p-6 md:p-8 border border-gray-700/50 mb-8 shadow-2xl">
+        <div class="mb-6">
+          <label class="block text-gray-300 mb-3 text-lg font-medium">
+            <i class="fas fa-link mr-2"></i> Paste YouTube URL
+          </label>
+          <div class="flex flex-col md:flex-row gap-4">
+            <input
+              id="videoUrl"
+              type="text"
+              placeholder="https://www.youtube.com/watch?v=..."
+              class="flex-grow p-4 rounded-xl bg-gray-900 border border-gray-700 focus:border-red-500 focus:outline-none focus:ring-2 focus:ring-red-500/30 transition text-lg"
+              autocomplete="off"
+            />
+            <button
+              id="analyzeBtn"
+              onclick="analyzeVideo()"
+              class="gradient-btn text-white font-bold py-4 px-8 rounded-xl hover:shadow-lg transition-all duration-300 flex items-center justify-center min-w-[180px]"
+            >
+              <span id="btnText"><i class="fas fa-search mr-2"></i> ANALYZE</span>
+              <div id="loader" class="loader hidden ml-3"></div>
+            </button>
+          </div>
+          <p class="text-gray-500 text-sm mt-3">
+            Supports: YouTube Videos, Shorts, Playlists, Live Streams (if available)
+          </p>
+        </div>
 
-    <div id="videoInfo" class="hidden mt-6 p-4 bg-gray-800 rounded-lg">
-      <div class="flex items-center mb-3">
-        <img id="thumbnail" src="" class="w-20 h-12 rounded mr-3 object-cover">
-        <div>
-          <h3 id="videoTitle" class="font-bold truncate"></h3>
-          <p id="videoDuration" class="text-sm text-gray-400"></p>
+        <!-- Examples -->
+        <div class="bg-gray-900/50 rounded-xl p-4">
+          <p class="text-gray-400 text-sm mb-2"><i class="fas fa-lightbulb mr-2"></i> Try these examples:</p>
+          <div class="flex flex-wrap gap-2">
+            <button onclick="setExample('https://youtu.be/dQw4w9WgXcQ')" class="text-sm bg-gray-800 hover:bg-gray-700 px-3 py-1 rounded-lg transition">
+              Music Video
+            </button>
+            <button onclick="setExample('https://www.youtube.com/shorts/NpEaa2P7qZI')" class="text-sm bg-gray-800 hover:bg-gray-700 px-3 py-1 rounded-lg transition">
+              YouTube Shorts
+            </button>
+            <button onclick="setExample('https://youtu.be/9bZkp7q19f0')" class="text-sm bg-gray-800 hover:bg-gray-700 px-3 py-1 rounded-lg transition">
+              Popular Video
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Error Message -->
+      <div id="errorContainer" class="hidden bg-red-900/20 border border-red-800 rounded-xl p-4 mb-6">
+        <div class="flex items-center">
+          <i class="fas fa-exclamation-triangle text-red-400 mr-3 text-xl"></i>
+          <div>
+            <h3 class="font-bold text-red-300" id="errorTitle">Error</h3>
+            <p class="text-red-200 text-sm" id="errorMessage"></p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Video Info Section -->
+      <div id="videoInfo" class="hidden fade-in">
+        <div class="bg-gray-800/30 backdrop-blur-lg rounded-2xl p-6 border border-gray-700/30 mb-8">
+          <div class="flex flex-col md:flex-row gap-6 items-start">
+            <div class="md:w-1/3">
+              <img id="videoThumbnail" src="" alt="Thumbnail" class="w-full rounded-xl shadow-lg">
+            </div>
+            <div class="md:w-2/3">
+              <div class="flex justify-between items-start mb-4">
+                <div>
+                  <h2 id="videoTitle" class="text-2xl font-bold mb-2 line-clamp-2"></h2>
+                  <div class="flex items-center text-gray-400 text-sm mb-4">
+                    <span id="videoChannel" class="mr-4"><i class="fas fa-user mr-1"></i> <span></span></span>
+                    <span id="videoDuration" class="mr-4"><i class="fas fa-clock mr-1"></i> <span></span></span>
+                    <span id="videoViews" class=""><i class="fas fa-eye mr-1"></i> <span></span></span>
+                  </div>
+                </div>
+                <button onclick="resetApp()" class="text-gray-400 hover:text-white">
+                  <i class="fas fa-times text-xl"></i>
+                </button>
+              </div>
+              
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                <div class="bg-gray-900/50 p-4 rounded-xl">
+                  <div class="flex items-center mb-2">
+                    <i class="fas fa-video text-green-400 mr-2"></i>
+                    <h3 class="font-bold">Video Formats</h3>
+                  </div>
+                  <div id="videoFormats" class="space-y-2">
+                    <!-- Formats will be added here -->
+                  </div>
+                </div>
+                
+                <div class="bg-gray-900/50 p-4 rounded-xl">
+                  <div class="flex items-center mb-2">
+                    <i class="fas fa-music text-blue-400 mr-2"></i>
+                    <h3 class="font-bold">Audio Formats</h3>
+                  </div>
+                  <div id="audioFormats" class="space-y-2">
+                    <!-- Audio formats will be added here -->
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Download Buttons -->
+        <div class="fade-in">
+          <h3 class="text-xl font-bold mb-6 text-center">Download Options</h3>
+          
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+            <!-- MP4 Download Card -->
+            <div class="bg-gradient-to-br from-green-900/20 to-emerald-900/20 border border-green-800/30 rounded-2xl p-6 hover:border-green-700/50 transition">
+              <div class="flex items-center mb-4">
+                <div class="bg-green-600 p-3 rounded-xl mr-4">
+                  <i class="fas fa-video text-xl"></i>
+                </div>
+                <div>
+                  <h4 class="font-bold text-lg">MP4 Video</h4>
+                  <p class="text-gray-400 text-sm">High quality video with audio</p>
+                </div>
+              </div>
+              <div class="space-y-3 mb-6">
+                <button onclick="startDownload('mp4', '360')" class="w-full bg-gray-800 hover:bg-gray-700 p-3 rounded-xl flex justify-between items-center transition">
+                  <span>360p <span class="text-gray-400 text-sm">(Standard)</span></span>
+                  <i class="fas fa-download"></i>
+                </button>
+                <button onclick="startDownload('mp4', '720')" class="w-full bg-gray-800 hover:bg-gray-700 p-3 rounded-xl flex justify-between items-center transition">
+                  <span>720p <span class="text-gray-400 text-sm">(HD)</span></span>
+                  <i class="fas fa-download"></i>
+                </button>
+                <button onclick="startDownload('mp4', '1080')" class="w-full bg-gray-800 hover:bg-gray-700 p-3 rounded-xl flex justify-between items-center transition">
+                  <span>1080p <span class="text-gray-400 text-sm">(Full HD)</span></span>
+                  <i class="fas fa-download"></i>
+                </button>
+              </div>
+              <button onclick="startDownload('mp4', 'best')" class="w-full gradient-btn text-white font-bold py-3 rounded-xl flex items-center justify-center">
+                <i class="fas fa-bolt mr-2"></i> Download Best Quality
+              </button>
+            </div>
+
+            <!-- MP3 Download Card -->
+            <div class="bg-gradient-to-br from-blue-900/20 to-indigo-900/20 border border-blue-800/30 rounded-2xl p-6 hover:border-blue-700/50 transition">
+              <div class="flex items-center mb-4">
+                <div class="bg-blue-600 p-3 rounded-xl mr-4">
+                  <i class="fas fa-music text-xl"></i>
+                </div>
+                <div>
+                  <h4 class="font-bold text-lg">MP3 Audio</h4>
+                  <p class="text-gray-400 text-sm">Extract audio from video</p>
+                </div>
+              </div>
+              <div class="space-y-3 mb-6">
+                <button onclick="startDownload('mp3', '128')" class="w-full bg-gray-800 hover:bg-gray-700 p-3 rounded-xl flex justify-between items-center transition">
+                  <span>128kbps <span class="text-gray-400 text-sm">(Good)</span></span>
+                  <i class="fas fa-download"></i>
+                </button>
+                <button onclick="startDownload('mp3', '192')" class="w-full bg-gray-800 hover:bg-gray-700 p-3 rounded-xl flex justify-between items-center transition">
+                  <span>192kbps <span class="text-gray-400 text-sm">(Better)</span></span>
+                  <i class="fas fa-download"></i>
+                </button>
+                <button onclick="startDownload('mp3', '320')" class="w-full bg-gray-800 hover:bg-gray-700 p-3 rounded-xl flex justify-between items-center transition">
+                  <span>320kbps <span class="text-gray-400 text-sm">(Best)</span></span>
+                  <i class="fas fa-download"></i>
+                </button>
+              </div>
+              <button onclick="startDownload('mp3', 'best')" class="w-full gradient-btn text-white font-bold py-3 rounded-xl flex items-center justify-center">
+                <i class="fas fa-bolt mr-2"></i> Download High Quality Audio
+              </button>
+            </div>
+          </div>
+
+          <!-- Quick Download Buttons -->
+          <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+            <button onclick="quickDownload('mp4', '720')" class="bg-gray-800 hover:bg-gray-700 p-4 rounded-xl flex flex-col items-center justify-center transition pulse">
+              <i class="fas fa-fast-forward text-green-400 text-2xl mb-2"></i>
+              <span class="font-bold">Fast MP4</span>
+              <span class="text-gray-400 text-sm">720p</span>
+            </button>
+            <button onclick="quickDownload('mp3', '192')" class="bg-gray-800 hover:bg-gray-700 p-4 rounded-xl flex flex-col items-center justify-center transition">
+              <i class="fas fa-file-audio text-blue-400 text-2xl mb-2"></i>
+              <span class="font-bold">MP3 Audio</span>
+              <span class="text-gray-400 text-sm">192kbps</span>
+            </button>
+            <button onclick="openStream()" class="bg-gray-800 hover:bg-gray-700 p-4 rounded-xl flex flex-col items-center justify-center transition">
+              <i class="fas fa-play-circle text-purple-400 text-2xl mb-2"></i>
+              <span class="font-bold">Stream</span>
+              <span class="text-gray-400 text-sm">Watch Online</span>
+            </button>
+            <button onclick="copyLink()" class="bg-gray-800 hover:bg-gray-700 p-4 rounded-xl flex flex-col items-center justify-center transition">
+              <i class="fas fa-share-alt text-yellow-400 text-2xl mb-2"></i>
+              <span class="font-bold">Share</span>
+              <span class="text-gray-400 text-sm">Copy Link</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Instructions -->
+      <div class="bg-gray-800/30 rounded-2xl p-6 mt-12">
+        <h3 class="text-xl font-bold mb-4 flex items-center">
+          <i class="fas fa-graduation-cap mr-3 text-red-400"></i> How to Use
+        </h3>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div class="flex items-start">
+            <div class="bg-red-600 p-3 rounded-lg mr-4">
+              <span class="font-bold">1</span>
+            </div>
+            <div>
+              <h4 class="font-bold mb-2">Paste URL</h4>
+              <p class="text-gray-400 text-sm">Copy and paste any YouTube video link</p>
+            </div>
+          </div>
+          <div class="flex items-start">
+            <div class="bg-red-600 p-3 rounded-lg mr-4">
+              <span class="font-bold">2</span>
+            </div>
+            <div>
+              <h4 class="font-bold mb-2">Analyze</h4>
+              <p class="text-gray-400 text-sm">Click analyze to get available formats</p>
+            </div>
+          </div>
+          <div class="flex items-start">
+            <div class="bg-red-600 p-3 rounded-lg mr-4">
+              <span class="font-bold">3</span>
+            </div>
+            <div>
+              <h4 class="font-bold mb-2">Download</h4>
+              <p class="text-gray-400 text-sm">Choose format and click download</p>
+            </div>
+          </div>
         </div>
       </div>
     </div>
+  </main>
 
-    <div id="actions" class="hidden mt-6 space-y-4 animate-fadeIn">
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
-        <button onclick="download('mp4')" class="bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 p-4 rounded-lg font-bold flex items-center justify-center transition">
-          <i class="fas fa-video mr-2"></i> MP4 (Video)
-        </button>
-        <button onclick="download('mp3')" class="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 p-4 rounded-lg font-bold flex items-center justify-center transition">
-          <i class="fas fa-music mr-2"></i> MP3 (Audio)
-        </button>
+  <!-- Footer -->
+  <footer class="container mx-auto px-4 py-8 mt-12 border-t border-gray-800/50">
+    <div class="text-center text-gray-500">
+      <p class="mb-4">
+        <i class="fas fa-exclamation-circle mr-2"></i>
+        This tool is for educational purposes. Please respect copyright laws.
+      </p>
+      <div class="flex justify-center space-x-6 mb-4">
+        <a href="#" class="hover:text-white transition"><i class="fab fa-github"></i> GitHub</a>
+        <a href="#" class="hover:text-white transition"><i class="fas fa-question-circle"></i> FAQ</a>
+        <a href="#" class="hover:text-white transition"><i class="fas fa-envelope"></i> Contact</a>
+        <a href="#" class="hover:text-white transition"><i class="fas fa-shield-alt"></i> Privacy</a>
       </div>
-      
-      <div class="grid grid-cols-3 gap-2 mt-4">
-        <button onclick="downloadQuality('360')" class="bg-gray-800 hover:bg-gray-700 p-2 rounded text-sm">
-          360p
-        </button>
-        <button onclick="downloadQuality('720')" class="bg-gray-800 hover:bg-gray-700 p-2 rounded text-sm">
-          720p
-        </button>
-        <button onclick="downloadQuality('1080')" class="bg-gray-800 hover:bg-gray-700 p-2 rounded text-sm">
-          1080p
-        </button>
-      </div>
+      <p class="text-sm">
+        &copy; 2024 YTDownloader Pro. Not affiliated with YouTube.
+        <br>
+        <span class="text-xs">Backend: Render.com | Frontend: Vercel.com</span>
+      </p>
     </div>
+  </footer>
 
-    <div class="mt-8 pt-6 border-t border-gray-800 text-center text-gray-500 text-sm">
-      <p><i class="fas fa-exclamation-triangle mr-1"></i> For educational purposes only</p>
-      <p class="mt-1">Max duration: 30 minutes • Supported formats: MP4, MP3</p>
+  <!-- Download Progress Modal -->
+  <div id="downloadModal" class="hidden fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
+    <div class="bg-gray-800 rounded-2xl p-6 max-w-md w-full border border-gray-700">
+      <div class="flex items-center mb-6">
+        <div class="loader mr-4"></div>
+        <div>
+          <h3 class="font-bold text-lg">Downloading...</h3>
+          <p id="downloadStatus" class="text-gray-400 text-sm">Preparing your download</p>
+        </div>
+      </div>
+      <div class="bg-gray-900 rounded-full h-2 mb-4">
+        <div id="downloadProgress" class="bg-red-600 h-full rounded-full w-0 transition-all duration-300"></div>
+      </div>
+      <p class="text-center text-gray-400 text-sm mb-2">
+        <span id="downloadSpeed">--</span> | <span id="downloadTime">--</span>
+      </p>
+      <button onclick="cancelDownload()" class="w-full bg-gray-700 hover:bg-gray-600 p-3 rounded-xl mt-4">
+        Cancel Download
+      </button>
     </div>
   </div>
 
 <script>
-const BACKEND_URL = "https://ytdownloader-pro.onrender.com";
-let videoId = "";
-let videoData = {};
+// Configuration
+const BACKEND_URL = "https://your-render-backend.onrender.com"; // Replace with your Render URL
+let currentVideoInfo = null;
 
-async function analyze() {
-  const url = document.getElementById("videoUrl").value.trim();
-  const match = url.match(/(?:v=|youtu\.be\/|shorts\/)([a-zA-Z0-9_-]{11})/);
+// Set example URL
+function setExample(url) {
+  document.getElementById('videoUrl').value = url;
+  document.getElementById('videoUrl').focus();
+}
 
-  if (!match) {
-    showError("Please enter a valid YouTube URL");
+// Reset app
+function resetApp() {
+  document.getElementById('videoInfo').classList.add('hidden');
+  document.getElementById('videoUrl').value = '';
+  document.getElementById('videoUrl').focus();
+  currentVideoInfo = null;
+}
+
+// Show error
+function showError(title, message) {
+  document.getElementById('errorTitle').textContent = title;
+  document.getElementById('errorMessage').textContent = message;
+  document.getElementById('errorContainer').classList.remove('hidden');
+  
+  setTimeout(() => {
+    document.getElementById('errorContainer').classList.add('hidden');
+  }, 5000);
+}
+
+// Analyze video
+async function analyzeVideo() {
+  const url = document.getElementById('videoUrl').value.trim();
+  
+  if (!url) {
+    showError('Empty URL', 'Please paste a YouTube URL');
     return;
   }
 
-  videoId = match[1];
-  const btn = document.getElementById("analyzeBtn");
-  const btnText = document.getElementById("btnText");
-  const loader = document.getElementById("loader");
-  
-  // Show loading
-  btn.disabled = true;
-  btnText.textContent = "ANALYZING...";
-  loader.classList.remove("hidden");
-  hideError();
+  // Validate URL
+  const youtubeRegex = /^(https?:\/\/)?(www\.)?(youtube\.com|youtu\.be)\/.+$/;
+  if (!youtubeRegex.test(url)) {
+    showError('Invalid URL', 'Please enter a valid YouTube URL');
+    return;
+  }
 
+  // Show loading
+  const btn = document.getElementById('analyzeBtn');
+  const btnText = document.getElementById('btnText');
+  const loader = document.getElementById('loader');
+  
+  btn.disabled = true;
+  btnText.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> ANALYZING';
+  loader.classList.remove('hidden');
+  
   try {
-    // Fetch video info
-    const response = await fetch(`${BACKEND_URL}/info?videoId=${videoId}`);
-    if (!response.ok) throw new Error("Failed to fetch video info");
+    // Call backend API
+    const response = await fetch(`${BACKEND_URL}/api/info?url=${encodeURIComponent(url)}`, {
+      headers: {
+        'Accept': 'application/json'
+      }
+    });
     
-    videoData = await response.json();
+    if (!response.ok) {
+      throw new Error(`Server returned ${response.status}`);
+    }
     
-    // Show video info
-    document.getElementById("videoInfo").classList.remove("hidden");
-    document.getElementById("thumbnail").src = videoData.thumbnail;
-    document.getElementById("videoTitle").textContent = videoData.title;
-    document.getElementById("videoDuration").textContent = `Duration: ${videoData.duration}`;
+    const data = await response.json();
     
-    // Show download buttons
-    document.getElementById("actions").classList.remove("hidden");
+    if (!data.success) {
+      throw new Error(data.error || 'Failed to analyze video');
+    }
+    
+    // Store video info
+    currentVideoInfo = data.data;
+    
+    // Update UI
+    updateVideoInfoUI(data.data);
+    document.getElementById('videoInfo').classList.remove('hidden');
+    document.getElementById('errorContainer').classList.add('hidden');
+    
+    // Scroll to results
+    document.getElementById('videoInfo').scrollIntoView({ behavior: 'smooth' });
     
   } catch (error) {
-    console.error("Analysis error:", error);
-    showError("Could not analyze video. Please check the URL and try again.");
+    console.error('Analysis error:', error);
+    showError('Analysis Failed', error.message || 'Could not analyze the video. Please try again.');
   } finally {
     // Reset button
     btn.disabled = false;
-    btnText.textContent = "ANALYZE VIDEO";
-    loader.classList.add("hidden");
+    btnText.innerHTML = '<i class="fas fa-search mr-2"></i> ANALYZE';
+    loader.classList.add('hidden');
   }
 }
 
-async function download(type) {
-  if (!videoId) {
-    showError("Please analyze a video first");
-    return;
-  }
-
-  showMessage(`Starting ${type.toUpperCase()} download...`, "info");
+// Update video info in UI
+function updateVideoInfoUI(info) {
+  // Basic info
+  document.getElementById('videoTitle').textContent = info.title;
+  document.getElementById('videoThumbnail').src = info.thumbnail;
+  document.getElementById('videoChannel').querySelector('span').textContent = info.channel || 'Unknown';
+  document.getElementById('videoDuration').querySelector('span').textContent = info.duration;
+  document.getElementById('videoViews').querySelector('span').textContent = 
+    info.view_count ? info.view_count.toLocaleString() + ' views' : 'Unknown views';
   
-  // Open download in new tab
-  window.open(`${BACKEND_URL}/download?videoId=${videoId}&type=${type}`, '_blank');
-}
-
-async function downloadQuality(quality) {
-  if (!videoId) {
-    showError("Please analyze a video first");
-    return;
-  }
-
-  showMessage(`Starting ${quality}p download...`, "info");
-  window.open(`${BACKEND_URL}/download?videoId=${videoId}&type=mp4&quality=${quality}`, '_blank');
-}
-
-function showError(message) {
-  const errorDiv = document.getElementById("error");
-  errorDiv.textContent = message;
-  errorDiv.classList.remove("hidden");
-  setTimeout(() => errorDiv.classList.add("hidden"), 5000);
-}
-
-function hideError() {
-  document.getElementById("error").classList.add("hidden");
-}
-
-function showMessage(message, type) {
-  const color = type === "info" ? "blue" : "green";
-  alert(message); // You can replace with a better notification system
-}
-
-// Enter key support
-document.getElementById("videoUrl").addEventListener("keypress", function(e) {
-  if (e.key === "Enter") analyze();
-});
-</script>
-</body>
-</html>
+  // Formats
+  const videoFormatsDiv = document.getElementById('videoFormats');
+  const audioFormatsDiv = document.getElementById('audioFormats');
+  
+  videoFormatsDiv.innerHTML = '';
+  audioFormatsDiv.innerHTML = '';
+  
+  // Add default options if no formats available
+  if (!info.formats || info.formats.length === 0) {
+    const defaultVideoFormats = [
+      { quality: '360p', ext: 'mp4', filesize: '~50-100 MB' },
+      { quality: '720p', ext: 'mp4', filesize: '~100-250 MB' },
+      { quality: '1080p', ext: 'mp4', filesize: '~250-500 MB' }
+    ];
+    
+    const defaultAudioFormats = [
+      { quality: '128kbps', ext: 'mp3
