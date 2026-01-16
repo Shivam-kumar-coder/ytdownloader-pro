@@ -3,7 +3,7 @@ services:
     name: ytdownloader-backend
     env: node
     buildCommand: npm install
-    startCommand: npm start
+    startCommand: node server.js  # यहाँ change करें
     plan: free
     envVars:
       - key: NODE_ENV
