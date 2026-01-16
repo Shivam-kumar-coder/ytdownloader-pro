@@ -1,15 +1,10 @@
 import express from 'express';
 import cors from 'cors';
 import axios from 'axios';
-import { exec } from 'child_process';
+import ytdl from 'ytdl-core';
 import fs from 'fs';
-import path from 'path';
-import { fileURLToPath } from 'url';
-import { promisify } from 'util';
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-const execAsync = promisify(exec);
+import { pipeline } from 'stream/promises';
+import { randomBytes } from 'crypto';
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -19,39 +14,24 @@ app.use(cors({
   origin: ['https://ytdownloader-pro.vercel.app', 'http://localhost:3000'],
   credentials: true
 }));
+
 app.use(express.json());
-app.use(express.static('public'));
 
-// Check if yt-dlp is installed
-async function checkYtDlp() {
-  try {
-    await execAsync('yt-dlp --version');
-    console.log('✓ yt-dlp is installed');
-    return true;
-  } catch {
-    console.log('✗ yt-dlp not found, installing...');
-    try {
-      await execAsync('pip3 install yt-dlp');
-      console.log('✓ yt-dlp installed successfully');
-      return true;
-    } catch (error) {
-      console.error('Failed to install yt-dlp:', error);
-      return false;
-    }
-  }
-}
+// In-memory cache
+const cache = new Map();
+const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
 
-// Health Check
+// Health check
 app.get('/health', (req, res) => {
   res.json({
     status: 'OK',
-    timestamp: new Date().toISOString(),
     service: 'YTDownloader API',
-    ytDlp: 'Checking...'
+    version: '2.0.0',
+    timestamp: new Date().toISOString()
   });
 });
 
-// Get Video Info
+// Get video info
 app.get('/api/info', async (req, res) => {
   try {
     const { url } = req.query;
@@ -60,111 +40,139 @@ app.get('/api/info', async (req, res) => {
       return res.status(400).json({ error: 'URL is required' });
     }
 
-    // Extract video ID
-    const videoId = extractVideoId(url);
-    if (!videoId) {
+    // Validate YouTube URL
+    if (!ytdl.validateURL(url)) {
       return res.status(400).json({ error: 'Invalid YouTube URL' });
     }
 
-    // Get info using yt-dlp
-    const command = `yt-dlp --dump-json --no-warnings "https://www.youtube.com/watch?v=${videoId}"`;
+    // Try to get from cache first
+    const cacheKey = `info:${url}`;
+    const cached = cache.get(cacheKey);
     
-    try {
-      const { stdout } = await execAsync(command, { timeout: 30000 });
-      const info = JSON.parse(stdout);
-      
-      res.json({
-        success: true,
-        data: {
-          id: videoId,
-          title: info.title,
-          thumbnail: info.thumbnail,
-          duration: formatDuration(info.duration),
-          channel: info.uploader,
-          view_count: info.view_count,
-          formats: info.formats ? info.formats.slice(0, 5).map(f => ({
-            quality: f.format_note || f.resolution,
-            ext: f.ext,
-            filesize: f.filesize ? formatFileSize(f.filesize) : 'Unknown'
-          })) : []
-        }
-      });
-    } catch (execError) {
-      // Fallback to API method
-      const fallbackInfo = await getInfoFromAPI(videoId);
-      res.json({
-        success: true,
-        data: fallbackInfo
-      });
+    if (cached && (Date.now() - cached.timestamp < CACHE_DURATION)) {
+      return res.json({ success: true, data: cached.data, cached: true });
     }
+
+    // Get video info using ytdl-core
+    const info = await ytdl.getInfo(url);
+    
+    const videoInfo = {
+      id: info.videoDetails.videoId,
+      title: info.videoDetails.title,
+      thumbnail: info.videoDetails.thumbnails[info.videoDetails.thumbnails.length - 1].url,
+      duration: formatDuration(parseInt(info.videoDetails.lengthSeconds)),
+      channel: info.videoDetails.author.name,
+      view_count: parseInt(info.videoDetails.viewCount) || null,
+      formats: info.formats.filter(f => f.hasVideo || f.hasAudio).map(format => ({
+        quality: format.qualityLabel || format.audioQuality || 'Unknown',
+        container: format.container,
+        hasVideo: format.hasVideo,
+        hasAudio: format.hasAudio,
+        filesize: format.contentLength ? formatFileSize(parseInt(format.contentLength)) : 'Unknown',
+        url: format.url
+      }))
+    };
+
+    // Cache the result
+    cache.set(cacheKey, {
+      data: videoInfo,
+      timestamp: Date.now()
+    });
+
+    res.json({ success: true, data: videoInfo, cached: false });
+    
   } catch (error) {
     console.error('Info error:', error);
-    res.status(500).json({ 
-      success: false, 
-      error: 'Failed to get video info',
-      message: error.message 
-    });
+    
+    // Fallback method using noembed API
+    try {
+      const videoId = extractVideoId(req.query.url);
+      if (!videoId) throw error;
+      
+      const fallbackInfo = await getFallbackInfo(videoId);
+      res.json({ success: true, data: fallbackInfo, fallback: true });
+    } catch (fallbackError) {
+      res.status(500).json({ 
+        success: false, 
+        error: 'Failed to get video info',
+        message: error.message 
+      });
+    }
   }
 });
 
-// Download Endpoint
+// Download endpoint
 app.get('/api/download', async (req, res) => {
   try {
-    const { url, format = 'mp4', quality = 'best' } = req.query;
+    const { url, format = 'mp4', quality = 'highest' } = req.query;
     
     if (!url) {
       return res.status(400).json({ error: 'URL is required' });
     }
 
-    const videoId = extractVideoId(url);
-    if (!videoId) {
+    // Validate URL
+    if (!ytdl.validateURL(url)) {
       return res.status(400).json({ error: 'Invalid YouTube URL' });
     }
 
-    // Generate unique filename
-    const timestamp = Date.now();
-    const filename = `yt_${videoId}_${timestamp}.${format}`;
+    // Get video info
+    const info = await ytdl.getInfo(url);
+    const videoId = info.videoDetails.videoId;
     
     // Set headers
+    const filename = `video_${videoId}_${Date.now()}.${format === 'mp3' ? 'mp3' : 'mp4'}`;
     res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
-    res.setHeader('Content-Type', format === 'mp3' ? 'audio/mpeg' : 'video/mp4');
     
-    // Build yt-dlp command based on format
-    let command;
     if (format === 'mp3') {
-      command = `yt-dlp -x --audio-format mp3 --audio-quality 320k -o - "${url}"`;
-    } else {
-      if (quality === 'best') {
-        command = `yt-dlp -f "best[ext=mp4]" -o - "${url}"`;
+      res.setHeader('Content-Type', 'audio/mpeg');
+      
+      // For audio, we need to use a different approach since ytdl-core doesn't convert
+      // We'll use an external service or stream audio-only format
+      const audioFormats = ytdl.filterFormats(info.formats, 'audioonly');
+      const bestAudio = audioFormats[0];
+      
+      if (bestAudio && bestAudio.url) {
+        // Redirect to direct audio stream
+        return res.redirect(bestAudio.url);
       } else {
-        command = `yt-dlp -f "best[height<=${quality}]" -o - "${url}"`;
+        // Use ytdl with audio only filter
+        ytdl(url, { filter: 'audioonly', quality: 'highestaudio' })
+          .pipe(res)
+          .on('error', (error) => {
+            console.error('Stream error:', error);
+            if (!res.headersSent) {
+              res.status(500).send('Download failed');
+            }
+          });
       }
+    } else {
+      res.setHeader('Content-Type', 'video/mp4');
+      
+      // Choose format based on quality
+      let filter;
+      if (quality === 'highest') {
+        filter = 'videoandaudio';
+      } else if (quality === 'lowest') {
+        filter = 'videoandaudio';
+      } else {
+        filter = (format) => format.container === 'mp4' && 
+          format.qualityLabel === quality + 'p';
+      }
+      
+      const videoStream = ytdl(url, { 
+        filter: filter,
+        quality: quality === 'lowest' ? 'lowest' : 'highest'
+      });
+      
+      videoStream.pipe(res);
+      
+      videoStream.on('error', (error) => {
+        console.error('Stream error:', error);
+        if (!res.headersSent) {
+          res.status(500).send('Download failed');
+        }
+      });
     }
-
-    // Execute command and stream output
-    const child = exec(command);
-    
-    child.stdout.pipe(res);
-    
-    child.stderr.on('data', (data) => {
-      console.error('yt-dlp stderr:', data.toString());
-    });
-    
-    child.on('error', (error) => {
-      console.error('Exec error:', error);
-      if (!res.headersSent) {
-        res.status(500).send('Download failed');
-      }
-    });
-    
-    child.on('close', (code) => {
-      console.log(`yt-dlp process exited with code ${code}`);
-    });
-    
-    // Handle client disconnect
-    req.on('close', () => {
-      child.kill();
-    });
     
   } catch (error) {
     console.error('Download error:', error);
@@ -178,7 +186,7 @@ app.get('/api/download', async (req, res) => {
   }
 });
 
-// Alternative: Direct Stream (No conversion)
+// Stream endpoint (for direct playback)
 app.get('/api/stream', async (req, res) => {
   try {
     const { url } = req.query;
@@ -187,23 +195,57 @@ app.get('/api/stream', async (req, res) => {
       return res.status(400).json({ error: 'URL is required' });
     }
 
-    // Get direct link using yt-dlp
-    const { stdout } = await execAsync(`yt-dlp -g "${url}"`);
-    const streamUrl = stdout.trim().split('\n')[0];
+    if (!ytdl.validateURL(url)) {
+      return res.status(400).json({ error: 'Invalid YouTube URL' });
+    }
+
+    // Get stream URL using ytdl-core
+    const info = await ytdl.getInfo(url);
+    const format = ytdl.chooseFormat(info.formats, { quality: 'highest' });
     
-    if (!streamUrl) {
-      throw new Error('Could not get stream URL');
+    if (!format || !format.url) {
+      return res.status(500).json({ error: 'Could not get stream URL' });
     }
     
-    // Redirect to direct stream
-    res.redirect(streamUrl);
+    // Redirect to stream URL
+    res.redirect(format.url);
+    
   } catch (error) {
     console.error('Stream error:', error);
     res.status(500).json({ error: 'Stream failed' });
   }
 });
 
-// Helper Functions
+// Alternative download using external APIs
+app.get('/api/download/alt', async (req, res) => {
+  try {
+    const { url, format = 'mp4' } = req.query;
+    
+    if (!url) {
+      return res.status(400).json({ error: 'URL is required' });
+    }
+
+    const videoId = extractVideoId(url);
+    if (!videoId) {
+      return res.status(400).json({ error: 'Invalid YouTube URL' });
+    }
+
+    // Use external APIs as fallback
+    const downloadUrl = await getDownloadUrlFromExternalAPI(videoId, format);
+    
+    if (downloadUrl) {
+      res.redirect(downloadUrl);
+    } else {
+      res.status(500).json({ error: 'All download methods failed' });
+    }
+    
+  } catch (error) {
+    console.error('Alt download error:', error);
+    res.status(500).json({ error: 'Download failed' });
+  }
+});
+
+// Helper functions
 function extractVideoId(url) {
   const patterns = [
     /(?:v=|youtu\.be\/|shorts\/)([a-zA-Z0-9_-]{11})/,
@@ -245,22 +287,26 @@ function formatFileSize(bytes) {
   return `${size.toFixed(1)} ${units[unitIndex]}`;
 }
 
-async function getInfoFromAPI(videoId) {
+async function getFallbackInfo(videoId) {
   try {
     const response = await axios.get(`https://noembed.com/embed`, {
-      params: { url: `https://youtube.com/watch?v=${videoId}` }
+      params: { 
+        url: `https://youtube.com/watch?v=${videoId}`,
+        format: 'json'
+      },
+      timeout: 5000
     });
     
     return {
       id: videoId,
-      title: response.data.title,
-      thumbnail: response.data.thumbnail_url,
+      title: response.data.title || 'YouTube Video',
+      thumbnail: response.data.thumbnail_url || `https://img.youtube.com/vi/${videoId}/hqdefault.jpg`,
       duration: 'Unknown',
-      channel: response.data.author_name,
+      channel: response.data.author_name || 'Unknown',
       view_count: null,
       formats: []
     };
-  } catch {
+  } catch (error) {
     return {
       id: videoId,
       title: 'YouTube Video',
@@ -273,14 +319,50 @@ async function getInfoFromAPI(videoId) {
   }
 }
 
-// Start Server
-app.listen(PORT, async () => {
-  console.log(`🚀 Server running on port ${PORT}`);
-  console.log(`🌐 CORS enabled for Vercel`);
-  
-  // Check yt-dlp
-  const ytDlpInstalled = await checkYtDlp();
-  if (!ytDlpInstalled) {
-    console.warn('⚠️  yt-dlp may not work properly');
+async function getDownloadUrlFromExternalAPI(videoId, format) {
+  const apis = [
+    // Add free external APIs here
+    `https://yt5s.io/api/ajaxSearch`,
+    `https://api.vevioz.com/api/button/${format}/${videoId}`
+  ];
+
+  for (const api of apis) {
+    try {
+      const response = await axios.post(api, {
+        q: `https://youtube.com/watch?v=${videoId}`,
+        vt: format
+      }, {
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+          'Content-Type': 'application/x-www-form-urlencoded'
+        },
+        timeout: 10000
+      });
+
+      if (response.data && response.data.d_url) {
+        return response.data.d_url;
+      }
+    } catch (error) {
+      console.log(`API ${api} failed:`, error.message);
+      continue;
+    }
   }
+  
+  return null;
+}
+
+// Clean cache every hour
+setInterval(() => {
+  const now = Date.now();
+  for (const [key, value] of cache.entries()) {
+    if (now - value.timestamp > CACHE_DURATION) {
+      cache.delete(key);
+    }
+  }
+}, 60 * 60 * 1000);
+
+// Start server
+app.listen(PORT, () => {
+  console.log(`🚀 Server running on port ${PORT}`);
+  console.log(`📁 Cache enabled with ${CACHE_DURATION/1000} second duration`);
 });
